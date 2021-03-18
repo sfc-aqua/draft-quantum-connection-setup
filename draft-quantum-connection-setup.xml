@@ -1,0 +1,636 @@
+<?xml version="1.0" encoding="US-ASCII"?>
+<!-- This template is for creating an Internet Draft using xml2rfc,
+    which is available here: http://xml.resource.org. -->
+<!DOCTYPE rfc SYSTEM "rfc2629.dtd" [
+<!-- One method to get references from the online citation libraries.
+    There has to be one entity for each item to be referenced. 
+    An alternate method (rfc include) is described in the references. -->
+
+<!ENTITY RFC2119 SYSTEM "http://xml.resource.org/public/rfc/bibxml/reference.RFC.2119.xml">
+<!ENTITY RFC2328 SYSTEM "http://xml.resource.org/public/rfc/bibxml/reference.RFC.2328.xml">
+<!ENTITY RFC2629 SYSTEM "http://xml.resource.org/public/rfc/bibxml/reference.RFC.2629.xml">
+<!ENTITY RFC3552 SYSTEM "http://xml.resource.org/public/rfc/bibxml/reference.RFC.3552.xml">
+<!ENTITY RFC5226 SYSTEM "http://xml.resource.org/public/rfc/bibxml/reference.RFC.5226.xml">
+]>
+<?xml-stylesheet type='text/xsl' href='rfc2629.xslt' ?>
+<!-- used by XSLT processors -->
+<!-- For a complete list and description of processing instructions (PIs), 
+    please see http://xml.resource.org/authoring/README.html. -->
+<!-- Below are generally applicable Processing Instructions (PIs) that most I-Ds might want to use.
+    (Here they are set differently than their defaults in xml2rfc v1.32) -->
+<?rfc strict="yes" ?>
+<!-- give errors regarding ID-nits and DTD validation -->
+<!-- control the table of contents (ToC) -->
+<?rfc toc="yes"?>
+<!-- generate a ToC -->
+<?rfc tocdepth="4"?>
+<!-- the number of levels of subsections in ToC. default: 3 -->
+<!-- control references -->
+<?rfc symrefs="yes"?>
+<!-- use symbolic references tags, i.e, [RFC2119] instead of [1] -->
+<?rfc sortrefs="yes" ?>
+<!-- sort the reference entries alphabetically -->
+<!-- control vertical white space 
+    (using these PIs as follows is recommended by the RFC Editor) -->
+<?rfc compact="yes" ?>
+<!-- do not start each main section on a new page -->
+<?rfc subcompact="no" ?>
+<!-- keep one blank line between list items -->
+<!-- end of list of popular I-D processing instructions -->
+<rfc category="info" docName="draft-van-meter-qirg-quantum-connection-setup-00" ipr="trust200902">
+ <!-- category values: std, bcp, info, exp, and historic
+    ipr values: trust200902, noModificationTrust200902, noDerivativesTrust200902,
+       or pre5378Trust200902
+    you can add the attributes updates="NNNN" and obsoletes="NNNN" 
+    they will automatically be output with "(if approved)" -->
+
+ <!-- ***** FRONT MATTER ***** -->
+
+ <front>
+   <!-- The abbreviated title is used in the page header - it is only necessary if the 
+        full title is longer than 39 characters -->
+
+   <title abbrev="">Connection Setup in a Quantum Network</title>
+
+   <!-- add 'role="editor"' below for the editors if appropriate -->
+
+   <!-- Another author who claims to be an editor -->
+
+   <author fullname="Rodney Van Meter" initials="R."
+           surname="Van Meter">
+     <organization>Keio University</organization>
+     <address>
+       <postal>
+         <street>5322 Endo</street>
+         <city>Fujisawa</city>
+         <region>Kanagawa</region>
+         <code>252-0882</code>
+         <country>JP</country>
+       </postal>
+       <phone>+81-46-649-3529</phone>
+       <email>rdv@sfc.wide.ad.jp</email>
+     </address>
+   </author>
+
+   <author fullname="Takaaki Matsuo" initials="T."
+           surname="Matsuo">
+     <organization>Keio University</organization>
+     <address>
+       <postal>
+         <street>5322 Endo</street>
+         <city>Fujisawa</city>
+         <region>Kanagawa</region>
+         <code>252-0882</code>
+         <country>JP</country>
+       </postal>
+       <phone>+81-46-649-3529</phone>
+       <email>kaaki@sfc.wide.ad.jp</email>
+     </address>
+   </author>
+
+   <date year="2019" />
+
+   <!-- If the month and year are both specified and are the current ones, xml2rfc will fill 
+        in the current day for you. If only the current year is specified, xml2rfc will fill 
+	 in the current day and month for you. If the year is not the current one, it is 
+	 necessary to specify at least a month (xml2rfc assumes day="1" if not specified for the 
+	 purpose of calculating the expiry date).  With drafts it is normally sufficient to 
+	 specify just the year. -->
+
+   <!-- Meta-data Declarations -->
+
+   <area>General</area>
+
+   <workgroup>Quantum Internet Research Group</workgroup>
+
+   <!-- WG name at the upperleft corner of the doc,
+        IETF is fine for individual submissions.  
+	 If this element is not present, the default is "Network Working Group",
+        which is used by the RFC Editor as a nod to the history of the IETF. -->
+
+   <keyword>quantum</keyword>
+
+   <!-- Keywords will be incorporated into HTML output
+        files in a meta tag but they have no effect on text or nroff
+        output. If you submit your draft to the RFC Editor, the
+        keywords will be used for the search engine. -->
+
+   <abstract>
+     <t>Near-term quantum networks will grow to form a Noisy,
+       Intermediate-Scale Quantum Internet (NISQI).  Connection setup
+       will require adapting behavior along the path to the noise
+       levels of individual elements.  In this proposal, path creation
+       is triggered by an application at the Initiator, information is
+       accumulated node-by-node on an outbound pass in a series of
+       QCap (quantum capability) blocks, then the RuleSets are created
+       at the Responder.  RuleSets are installed at the individual
+       nodes on the return pass.  This document describes the
+       architecture of connection setup in a network.  Details of the
+       RuleSets and QCaps, addressing architecture, link protocols,
+       routing, resource allocation (multiplexing), extension of this
+       setup procedure to an internetwork, and extension to multiparty
+       communications are beyond the scope of this document.</t>
+   </abstract>
+ </front>
+
+ <middle>
+   <section title="Introduction">
+     <t>Building a connection across a <xref target="theqi">quantum
+     network</xref> is a classical task.  Because of the low success
+     probability of quantum communication due to photon loss and the
+     extremely high error rates due to the fragile nature of quantum
+     information, quantum communication between two nodes more closely
+     resembles a coordinated computation distributed among the set of
+     nodes forming the path between the two nodes than a
+     store-and-forward network
+     session<xref target="qnetworking">session</xref>.</t>
+
+     <t>Use of the quantum network is driven by applications running
+     at two (or more) classical nodes.  Overall behavior is similar
+     to client-server computing.  The connection is initiated from a
+     node similar to client and responded to by a node similar to a
+     server.  The details of the sending and receiving of the
+     classical messages are not specified in this document, but can
+     be modeled as if being sent over a TCP socket.  Messages are
+     assumed to be reliable and delivered in order.  These messages
+     have no hard real time requirement, though the subsequent data
+     phase of the operation may.</t>
+
+     <t>This connection setup process must collect information about
+     the hardware (channels and buffer memories) to be used, because
+     of the heterogeneity of the underlying hardware.  Loss in
+     optical channels naturally varies with channel length and other
+     factors, and has a large impact on quantum communication
+     performance.  Individual quantum buffers holding quantum bits
+     (qubits) will vary in quality, as well.</t>
+
+     <!-- this section needs to go second -->
+     <section title="Requirements Language">
+       <t>The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
+       "SHOULD", "SHOULD NOT", "RECOMMENDED", "MAY", and "OPTIONAL" in this
+       document are to be interpreted as described in <xref
+       target="RFC2119">RFC 2119</xref>.</t>
+     </section>
+   </section>
+
+   <section anchor="sec_vocab" title="Concepts and Glossary">
+
+     <t>The following terms will be used:
+       <list hangIndent="8" style="hanging">
+	 <t hangText="Bell pair"> a common form of entangled quantum
+	 state useful in communications.</t>
+	 <t hangText="End node"> a quantum network node with a
+	 single interface. </t>
+	 <t hangText="Entanglement"> the condition of a group of
+	 qubits (typically two qubits in this document) in a shared
+	 state that cannot be described using only real, non-negative,
+	 classical probabilities. </t>
+	 <t hangText="Entanglement Swapping"> executed at node B
+	 splices an entangled state shared with node A to an
+	 entangled state shared with node C, creating A-C
+	 entanglement and disentangling B from both nodes.</t>
+	 <t hangText="Fidelity"> a measure of the quality of a quantum
+	 state; roughly, the probability that the system holds the
+	 desired state.</t>
+	 <t hangText="Initiator"> the initiator of the classical process of
+	 establishing the connection by sending a message toward the
+	 Responder.</t>
+	 <t hangText="Purification"> an error detection mechanism
+	 on quantum states.  Typically, one quantum state is used to
+	 test the condition of a second state; the first state is
+	 destroyed in the process.  If the purification fails, it is
+	 unknown whether the first or second state was in error, and
+	 the second state is discarded as well.  If purification
+	 succeeds, our confidence in the state is improved.</t>
+	 <t hangText="QCap"> an information block describing the
+	   quantum capabilities of a particular node and link.</t>
+	 <t hangText="Qubit"> a quantum system with two states that
+	 can be stored in memory or transmitted through a channel,
+	 manipulated in a constrained set of operations, entangled
+	 with other qubits, and measured.</t>
+	 <t hangText="Repeater"> a quantum network node with a
+	   two interfaces, typically sitting in the middle of a chain. </t>
+	 <t hangText="Responder"> is the endpoint of the connection
+	 setup process, where the message sent by the Initiator
+	 terminates.  The Responder creates the RuleSets for all
+	 nodes in the path, and commonly will be the smarter node.</t>
+	 <t hangText="Router"> a quantum network node with a more than
+	   two interfaces, requiring routing capability. </t>
+	 <t hangText="RuleSet"> describes the actions that a nodes
+	   should take when certain conditions occur.  The contents of
+	   RuleSets are beyond the scope of this document.</t>
+     </list></t>
+
+     <t>The terms "source" and "destination" are not appropriate at
+     the connection level in a quantum network, because distributed
+     quantum states are not necessarily used for the unidirectional
+     transfer of information.  Therefore, we use Initiator and
+     Responder to designate roles in the connection setup process, but
+     those roles do not not necessarily correspond to any asymmetry
+     during the connection lifetime.  "Source" and "destination" may
+     be used to describe the movement of an individual classical
+     message.</t>
+
+     <t>Links are assumed to be point-to-point.  Multidrop physical
+     layers are possible, but quantum broadcast or multicast are not
+     directly possible at the physical level, and would have to be
+     emulated.</t>
+
+   </section>
+
+   <section anchor="sec_phases" title="Connection Setup Phases">
+
+   <section anchor="sec_phases_short" title="Short Description of Phases">
+     <t>The single-network, two-node connection setup procedure
+     consists of three basic phases:
+       <list counter="list_phases" hangIndent="4" style="format %d.">
+	 <t>The outbound request is routed from Initiator to Responder
+	 using a standard NextHop-based forwarding table, accumulating
+	 information about the path along the way in a stack of
+	 QCaps.</t>
+	 <t>When the request arrives at the Responder, the Responder
+	 uses that information to create a complete RuleSet for every
+	 node.  The RuleSets are assembled into a stack with the
+	 nearest node at the top.</t>
+	 <t>The RuleSets are sent back along the original path, with
+	   each node removing its RuleSet from the message (popping
+	   the stack), then forwarding the remaining QCaps on until it
+	   returns to the Initiator.</t>
+     </list></t>
+     </section>
+
+   <section anchor="sec_rationale" title="Rationale for this Architecture">
+
+       <t>The outbound pass collects information about the nodes and
+       links, to be used by the Responder to formulate the RuleSets.
+       Why is the information collected in this fashion rather than
+       shared more broadly across the network, e.g. as part of a
+       modified routing protocol such as <xref
+       target="RFC2328">OSPF</xref>?  Why does a single
+       node create the RuleSets for all nodes, rather than allowing
+       individual nodes to create their own RuleSets when they see
+       the PathSetupRequest message?</t>
+       <t><list counter="list_reasons" hangIndent="4" style="format %d.">
+       <t>Because Repeaters may be spaced as closely as every 10km, a
+       full topology for a network listing every Repeater may be
+       excessively large for routing purposes, but such information
+       is needed for building RuleSets.</t>
+       <t>The information collected may be substantially larger in
+       volume than simple link costs.</t>
+       <t>The information collected and used may be too dynamic for a
+       routing protocol.</t>
+       <t>Sharing of this information can be unnecessary when routing
+       is driven by policy decisions rather than technical capabilities.</t>
+       <t>Centralization of the RuleSet creation is necessary because
+       all RuleSets must cooperate toward a single goal, and the
+       correct breakdown of responsibility cannot be determined from
+       partial information.</t>
+       <t>Centralization of RuleSet creation allows a Responder to
+       upgrade its policies independently and to improve the process
+       if its developers have found better tuning mechanisms.  A
+       distributed mechanism would require that all nodes in the path
+       upgrade at the same time to avoid the creation of inconsistent
+       policies, and limit the ability of Responders (often service
+       providers of some sort) to innovate.</t>
+       </list>
+</t>
+       </section>
+
+   </section>
+
+   <section anchor="sec_caps_and_rules" title="Message Contents and Elements">
+
+     <t>This section outlines the principal information to be carried
+     in the messages.  Detailed packet formats are beyond the scope
+     of this document, and may vary from network to network.</t>
+
+     <section anchor="sec_request" title="PathSetupRequest">
+
+       <t>At minimum, the PathSetupRequest message must contain:</t>
+       <t><list counter="list_setup" hangIndent="4" style="format %d.">
+	   <t>node addresses for the Initiator and Responder</t>
+	   <t>the <xref target="qiroadmap">class of service requested</xref></t>
+	   <t>minimum performance parameters (fidelity and throughput)</t>
+       </list></t>
+
+     </section>
+
+     <section anchor="sec_caps" title="Quantum Capabilities">
+
+     <t>A QuantumCapabilities block to be added to the stack in the
+     PathSetupRequest message describes the functions, performance and
+     quality of the node and link.  This may include:</t>
+     <t><list counter="list_qcaps" hangIndent="4" style="format %d.">
+	 <t>the fidelity of Bell pairs created by the quantum channel</t>
+	 <t>the fidelity of local operations performed by the node
+	 for purification or entanglement swapping</t>
+	 <t>the rate at which entanglement can be created (Bell pairs
+	 per second)</t>
+     </list></t>
+     <t>The details of the required information may differ between
+       networks.  A standardized form of this information for sharing
+       between networks will be used for internetworking
+       operation.</t>
+       
+     </section>
+
+     <section anchor="sec_ruleset_messages" title="RuleSets">
+
+     <t>A RuleSet block in the stack in the PathSetupResponse message
+     describes the rules to be executed at each node.  A rule consists
+     of a Condition clause and an Action clause.  A Condition clause
+     lists the existence of particular entangled states, or the
+     reception of particular messages.  The Action clause describes
+     the actions of purification, entanglement swapping, or even
+     discarding an entangled state, as appropriate.  The details are
+     beyond the scope of this document.</t>
+
+     </section>
+
+   </section>
+
+   <section anchor="sec_proc" title="Processing the SetupRequest">
+
+   <section anchor="sec_init" title="Initiating a Connection Setup Request">
+
+     <t>An Initiator, driven by an application request for quantum
+     network services between itself and the Responder, builds the
+     PathSetupRequest, populates the first QCap block, selects the
+     next hop, and sends the request.  Note that there is no need for
+     either the Initiator or the Responder to know the entire network
+     topology, only be able to select a next hop appropriately.  The
+     details of the routing are beyond the scope of this document.</t>
+
+   </section>
+
+   <section anchor="sec_out" title="Outbound Processing">
+
+     <t>Creation of the RuleSets requires knowledge of the number of
+     nodes involved.  A quantum node adds its own address when
+     receiving the request packet, before sending to the next
+     node. The stack size indicates how many nodes are
+     involved. Additionally, the RuleSet creator may require
+     information regarding links between nodes along the path -
+     e.g. to be used when optimizing the order of entanglement
+     swapping. </t>
+
+     <figure>
+       <preamble>The pseudocode below outlines the processing on
+       receipt of the PathSetupRequest message.</preamble>
+   <artwork><![CDATA[
+    procedure ProcessFlatPathSetupRequest(Msg)
+        Msg.HopStack.Push(MyHopInfo)
+        if (MyAddr != Msg.ConnSpec.Responder)
+            // Process and forward
+            NextQuantumHop = GetNextQuantumHop(Msg.ConnSpec.Responder)
+            LinkInfo = GetLinkInfo(NextQuantumHop)
+            Msg.HopStack.Push(LinkInfo)
+            Forward(NextQuantumHop,Msg)
+        else
+            // have reached the far end, need to build RuleSets
+            // for everybody, then return
+            ReturnMsg = ProcessFlatPath(Msg)
+            MyRuleSet = ReturnMsg.RuleSetStack.Pop()
+            InstallRuleSet(MyRuleSet)
+            NextQuantumHop = ReturnMsg.RuleSetStack.Top.Addr
+            Forward(NextQuantumHop,Msg)
+        endif        
+    endprocedure
+
+           ]]></artwork>
+     </figure>
+
+ <t>Note that although we use the term "NextQuantumHop" here, that refers to
+ a neighboring quantum node, and does not imply that the classical
+ node's neighbor is necessarily the same; it could, in theory, pass
+ through multiple nodes to get there.</t>
+
+</section>
+
+   <section anchor="sec_endpoint" title="Responder Processing">
+
+     <t>The Responder accepts the final PathSetupRequest message with
+     the complete stack of information about node capabilities and
+     links, and builds a corresponding stack of RuleSets, one per node
+     in the path.  The details of this creation process are beyond the
+     scope of this document, and may be kept secret from other nodes
+     in the path.</t>
+
+   </section>
+
+   <section anchor="sec_return" title="Return Processing">
+
+     <figure>
+       <preamble>The pseudocode below outlines the processing on
+	 receipt of the PathSetupReturn message.</preamble>
+   <artwork><![CDATA[
+    procedure ProcessFlatPathSetupReturn(Msg)
+        MyRuleSet = ReturnMsg.RuleSetStack.Pop()
+        InstallRuleSet(MyRuleSet)
+        If (ReturnMsg.RuleSetStack.Size != 0)
+            NextQuantumHop = ReturnMsg.RuleSetStack.Top.Addr
+            Forward(NextQuantumHop,Msg)
+        endif
+    endprocedure
+
+           ]]></artwork>
+     </figure>
+
+<t>The RuleSetStack should only be empty after the "Initiator" node of
+  the original request removes its RuleSet, so this should be followed
+  by initiating the connection.</t>
+
+</section>
+</section>
+
+   <section anchor="sec_robustness" title="Rejection and Robustness of the Setup Process">
+
+   <section anchor="subsec_reject_repeater" title="Rejection by a Repeater or Router">
+
+     <t>A repeater or router that receives a PathSetupRequest may
+     reject the request if it has no quantum communication resources
+     available.  It should not reject the request simply because it
+     believes the requirements of the request (fidelity or rate) to be
+     difficult to fulfill; that responsibility lies with the
+     Responder.</t>
+
+     <t>When a node rejects the PathSetupRequest, it shall inform the
+     other nodes along the portion of the path that have already
+     received the PathSetupRequest by creating a PathSetupResponse
+     message with an error code that indicates failure and sending that
+     message to the node on the top of the stack.  As with a
+     successful PathSetupResponse, the list of nodes to which the
+     message must be sent is created as a stack.  Other than the
+     addresses and the error code, the message may be empty; no
+     RuleSets are required.  The message is then iteratively returned,
+     with each node popping its own address and forwarding to the
+     next.</t>
+
+   </section>
+
+   <section anchor="subsec_reject_responder" title="Rejection by a Responder">
+
+     <t>A Responder may reject a PathSetupRequest for any reason:</t>
+     <t><list counter="list_rejections" hangIndent="4" style="format %d.">
+	 <t>As with any classical system, it may simply choose to
+	 reject the request for any service-related reason, such as
+	 security, licensing, etc.</t>
+	 <t>It may determine that the request cannot be fulfilled
+	 with the resources offered by nodes in the path.</t>
+     </list></t>
+
+     <t>When a node rejects the PathSetupRequest, it shall inform the
+     other nodes along the path by creating a PathSetupReturn message
+     with an error code that indicates failure and sending that
+     message to the node on the top of the stack.  As with a
+     successful PathSetupResponse, the list of nodes to which the
+     message must be sent is created as a stack.  Other than the
+     addresses and the error code, the message may be empty; no
+     RuleSets are required.  The message is then iteratively returned,
+     with each node popping its own address and forwarding to the
+     next.</t>
+
+   </section>
+
+   <section anchor="subsec_robustness" title="Robustness">
+
+     <t>As the rate of connection initiation increases, competition
+     for resources will also increase.  A soft reservation mechanism
+     that temporarily allocates resources in the anticipation of
+     reception of a RuleSet may be used, with the reservation timing
+     out and resources being released if no RuleSet arrives within a
+     certain period.  Specification of this mechanism is beyond the
+     scope of this document.</t>
+
+     <t>Deeper integration of routing with real-time availability of
+     resources is beyond the scope of this document.</t>
+
+   </section>
+   </section>
+
+   <!-- Possibly an 'Acknowledgments' section ... -->
+
+   <!-- Possibly a 'Contributors' section ... -->
+
+   <section anchor="contributors" title="Contributors">
+
+     <t>Besides the authors, Luciano Aparicio, Clement Durand, Dominic
+     Horsman, Shota Nagayama, Takahiko Satoh, Shigeya Suzuki, Amin
+     Taherkhani, and Joe Touch have made substantial contributions to
+     the network architecture and the concepts described here.</t>
+
+     <t>We also thank Chia-Hung Chien, Kaori Ishizaki, Bill Munro, Kae
+     Nemoto, Takafumi Oka, Shinnosuke Ozawa, and Thaddeus Ladd.</t>
+
+   </section>
+
+   <section anchor="IANA" title="IANA Considerations">
+     <t>This memo includes no request to IANA.</t>
+
+   </section>
+
+   <section anchor="Security" title="Security Considerations">
+
+     <t>Security implications of this entire process are extensive.</t>
+
+     <t>To minimize the probability of tampering, each information
+     block added to the request on the outbound leg should be signed
+     by the node adding the block.</t>
+
+     <t>Each information block describes hardware configuration, and
+     therefore inherently leaks information about the network topology
+     and condition.  This document addresses only connection setup
+     within a single network.  Internetwork connection setup will
+     require mechanisms to limit the leaking of sensitive network
+     information across organizational boundaries.</t>
+
+     <t>Likewise, each RuleSet should be signed to prevent tampering
+     during the PathSetupResponse phase.</t>
+
+     <t>Both the Request and Response phase may be encrypted using
+     appropriate public key mechanisms.</t>
+
+     <t>It is also known that quantum networks may be vulnerable to
+     attacks not possible in classical networks.  These concerns are
+     beyond the scope of this document.</t>
+
+   </section>
+ </middle>
+
+ <!--  *****BACK MATTER ***** -->
+
+ <back>
+   <!-- References split into informative and normative -->
+
+   <!-- There are 2 ways to insert reference entries from the citation libraries:
+    1. define an ENTITY at the top, and use "ampersand character"RFC2629; here (as shown)
+    2. simply use a PI "less than character"?rfc include="reference.RFC.2119.xml"?> here
+       (for I-Ds: include="reference.I-D.narten-iana-considerations-rfc2434bis.xml")
+
+    Both are cited textually in the same manner: by using xref elements.
+    If you use the PI option, xml2rfc will, by default, try to find included files in the same
+    directory as the including file. You can also define the XML_LIBRARY environment variable
+    with a value containing a set of directories to search.  These can be either in the local
+    filing system or remote ones accessed by http (http://domain/dir/... ).-->
+
+   <references title="Normative References">
+     <!--?rfc include="http://xml.resource.org/public/rfc/bibxml/reference.RFC.2119.xml"?-->
+     &RFC2119;
+
+   </references>
+
+   <references title="Informative References">
+     <!-- Here we use entities that we defined at the beginning. -->
+
+     <!--?rfc include="http://xml.resource.org/public/rfc/bibxml/reference.RFC.2328.xml"?-->
+     &RFC2328;
+
+     <reference anchor="qnetworking">
+       <!-- the following is the minimum to make xml2rfc happy -->
+       <front>
+         <title>Quantum Networking</title>
+         <author initials="R." surname="Van Meter">
+           <organization></organization>
+         </author>
+         <date year="2014" />
+       </front>
+       <seriesInfo name="Wiley-iSTE" value="" />
+     </reference>
+
+     <reference anchor="theqi">
+       <front>
+         <title>The Quantum Internet</title>
+         <author initials="J." surname="Kimble">
+           <organization></organization>
+         </author>
+         <date year="2008" />
+       </front>
+       <seriesInfo name="Nature" value="453, 1023-1030" />
+     </reference>
+
+     <reference anchor="qiroadmap">
+       <front>
+         <title>Quantum internet: A vision for the road ahead</title>
+         <author initials="S." surname="Wehner">
+           <organization></organization>
+         </author>
+         <author initials="D." surname="Elkouss">
+           <organization></organization>
+         </author>
+         <author initials="R." surname="Hanson">
+           <organization></organization>
+         </author>
+         <date year="2018" />
+       </front>
+       <seriesInfo name="Science" value="362" />
+     </reference>
+
+   </references>
+
+
+   <!-- Change Log
+
+v00 2019-03-11  rdv   Initial version
+ -->
+ </back>
+</rfc>
