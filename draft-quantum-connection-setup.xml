@@ -37,7 +37,7 @@
 <?rfc subcompact="no" ?>
 <!-- keep one blank line between list items -->
 <!-- end of list of popular I-D processing instructions -->
-<rfc category="info" docName="draft-van-meter-qirg-quantum-connection-setup-00" ipr="trust200902">
+<rfc category="info" docName="draft-van-meter-qirg-quantum-connection-setup-01" ipr="trust200902">
  <!-- category values: std, bcp, info, exp, and historic
     ipr values: trust200902, noModificationTrust200902, noDerivativesTrust200902,
        or pre5378Trust200902
@@ -143,7 +143,7 @@
      resembles a coordinated computation distributed among the set of
      nodes forming the path between the two nodes than a
      store-and-forward network
-     session<xref target="qnetworking">session</xref>.</t>
+     <xref target="qnetworking">session</xref>.</t>
 
      <t>Use of the quantum network is driven by applications running
      at two (or more) classical nodes.  Overall behavior is similar
@@ -180,7 +180,9 @@
 	 <t hangText="Bell pair"> a common form of entangled quantum
 	 state useful in communications.</t>
 	 <t hangText="End node"> a quantum network node with a
-	 single interface. </t>
+	 single interface. End nodes may have stationary quantum
+	 memories, or may be capable only of measuring photons; this
+	 distinction is beyond the scope of this document.</t>
 	 <t hangText="Entanglement"> the condition of a group of
 	 qubits (typically two qubits in this document) in a shared
 	 state that cannot be described using only real, non-negative,
@@ -208,12 +210,19 @@
 	 can be stored in memory or transmitted through a channel,
 	 manipulated in a constrained set of operations, entangled
 	 with other qubits, and measured.</t>
-	 <t hangText="Repeater"> a quantum network node with a
-	   two interfaces, typically sitting in the middle of a chain. </t>
-	 <t hangText="Responder"> is the endpoint of the connection
-	 setup process, where the message sent by the Initiator
-	 terminates.  The Responder creates the RuleSets for all
-	 nodes in the path, and commonly will be the smarter node.</t>
+	 <t hangText="Repeater"> a quantum network node with
+	   two interfaces, typically sitting in the middle of a
+	   chain. Repeaters do not require routing functionality, but
+	   otherwise have the same capabilities as routers.  As
+	   spacing between nodes may be required to be as short as ten
+	   kilometers, depending on technology, what would be single
+	   fiber hops in a classical network will be a long chain of
+	   repeaters.</t>
+	 <t hangText="Responder"> is the classical endpoint of the
+	 connection setup process, where the message sent by the
+	 Initiator terminates.  The Responder creates the RuleSets for
+	 all nodes in the path, and commonly will be the smarter
+	 node.</t>
 	 <t hangText="Router"> a quantum network node with a more than
 	   two interfaces, requiring routing capability. </t>
 	 <t hangText="RuleSet"> describes the actions that a nodes
@@ -227,7 +236,22 @@
      transfer of information.  Therefore, we use Initiator and
      Responder to designate roles in the connection setup process, but
      those roles do not not necessarily correspond to any asymmetry
-     during the connection lifetime.  "Source" and "destination" may
+     during the connection lifetime. Source and destination are not
+     appropriate because:
+     <list counter="srcdst" hangIndent="4" style="format %d.">
+     <t>There may not even be data transferred between nodes;
+       the entanglement might be used for some shared operation that
+       doesn't involve qubits moving back and forth via teleportation.
+       Quantum key distribution (QKD) is an obvious example, where
+       both ends measure the entangled state and destroy it in order
+       to get a classical bit.
+     </t>
+     <t>Temporally, operations may not even happen
+     left-to-right along the chain of repeaters, again violating the
+     notion that data is moving.</t>
+     </list></t>
+
+     <t>"Source" and "destination" may
      be used to describe the movement of an individual classical
      message.</t>
 
@@ -315,9 +339,9 @@
 
      </section>
 
-     <section anchor="sec_caps" title="Quantum Capabilities">
+     <section anchor="sec_caps" title="Quantum Capabilities (QCap)">
 
-     <t>A QuantumCapabilities block to be added to the stack in the
+     <t>A QCap (quantum capabilities) block to be added to the stack in the
      PathSetupRequest message describes the functions, performance and
      quality of the node and link.  This may include:</t>
      <t><list counter="list_qcaps" hangIndent="4" style="format %d.">
@@ -344,6 +368,21 @@
      the actions of purification, entanglement swapping, or even
      discarding an entangled state, as appropriate.  The details are
      beyond the scope of this document.</t>
+
+     <t>In order to implement multiplexing schemes (e.g. buffer-space
+       multiplexing, time-division multiplexing, or statistical
+       multiplexing) based on the RuleSet-based network architecture,
+       a RuleSet may include descriptors that define the
+       usable resources for each link involved in that specific
+       connection.</t>
+
+     <t>If a link carries only a single connection, all resources
+       available may be fully assigned to that single connection to
+       maximize the throughput.  However, a link may receive a second
+       RuleSet generated for a new connection. In that case, the nodes
+       must be able to correctly update and reassign the available
+       resources.  Further details of the resource reservation and
+       reclamation process are beyond the scope of this document.</t>
 
      </section>
 
@@ -412,7 +451,9 @@
      <t>The Responder accepts the final PathSetupRequest message with
      the complete stack of information about node capabilities and
      links, and builds a corresponding stack of RuleSets, one per node
-     in the path.  The details of this creation process are beyond the
+     in the path.  The Responder's processing is outlined in the
+     "then" clause of the pseudocode above.
+     The details of this creation process are beyond the
      scope of this document, and may be kept secret from other nodes
      in the path.</t>
 
@@ -436,9 +477,9 @@
            ]]></artwork>
      </figure>
 
-<t>The RuleSetStack should only be empty after the "Initiator" node of
+<t>The RuleSetStack should only be empty after the Initiator node of
   the original request removes its RuleSet, so this should be followed
-  by initiating the connection.</t>
+  by activating the connection.</t>
 
 </section>
 </section>
@@ -521,6 +562,9 @@
 
      <t>We also thank Chia-Hung Chien, Kaori Ishizaki, Bill Munro, Kae
      Nemoto, Takafumi Oka, Shinnosuke Ozawa, and Thaddeus Ladd.</t>
+
+     <t>Comments by Wojciech Kozlowski, Gyananjay Rai and Patrick
+     Gelard are reflected in this draft.</t>
 
    </section>
 
